@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io'
 import pty from "node-pty"
+import { spawn } from 'node:child_process';
 
 const app = express();
 const server = createServer(app);
@@ -39,3 +40,33 @@ io.on('connection', (s) => {
         term.kill(9)
     })
 })
+
+const qemuCmd = '/usr/local/bin/qemu-system-morello';
+const qemuArgs = [
+  '-M', 'virt,gic-version=3',
+  '-cpu', 'morello',
+  '-smp', `${require('os').cpus().length}`,
+  '-bios', 'edk2-aarch64-code.fd',
+  '-m', process.env.MEMORY || '12G',
+  '-nographic',
+  '-drive', 'if=none,file=/home/cheri/cheribsd-morello-purecap.img,id=drv,format=raw',
+  '-device', 'virtio-blk-pci,drive=drv',
+  '-device', 'virtio-net-pci,netdev=net0',
+  '-netdev', 'user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22',
+  '-device', 'virtio-rng-pci'
+];
+
+console.log('starting qemu process with command: ' + qemuCmd + ' ' + qemuArgs.join(' '));
+const qemuProcess = spawn(qemuCmd, qemuArgs);
+
+qemuProcess.stdout.on('data', (data) => {
+    // check for string "login:"
+    if (data.toString().includes('login:')) {
+        console.log('qemu process started');
+    }
+    console.log(`stdout: ${data}`);
+});
+
+qemuProcess.on('close', (code) => {
+  console.log(`qemu exited with code ${code}`);
+});
