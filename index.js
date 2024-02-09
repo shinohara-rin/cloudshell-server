@@ -1,4 +1,5 @@
 import express from 'express';
+import { cpus } from 'node:os';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io'
 import pty from "node-pty"
@@ -45,7 +46,7 @@ const qemuCmd = '/usr/local/bin/qemu-system-morello';
 const qemuArgs = [
   '-M', 'virt,gic-version=3',
   '-cpu', 'morello',
-  '-smp', `${require('os').cpus().length}`,
+  '-smp', `${cpus().length}`,
   '-bios', 'edk2-aarch64-code.fd',
   '-m', process.env.MEMORY || '12G',
   '-nographic',
