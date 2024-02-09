@@ -63,7 +63,7 @@ const qemuProcess = spawn(qemuCmd, qemuArgs);
 const waitForLogin = (() => {
     let concat = ''
     return (data) => {
-        concat += data
+        concat += data.toString()
         if (concat.includes('login')) {
             return true
         }
