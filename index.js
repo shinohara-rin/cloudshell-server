@@ -7,6 +7,7 @@ import { spawn } from 'node:child_process';
 
 const app = express();
 const server = createServer(app);
+let qemuReady = false
 
 server.listen(3000, '0.0.0.0', () => {
     console.log('server running at http://localhost:3000');
@@ -23,6 +24,10 @@ const io = new Server(server,{
     }
 })
 io.on('connection', (s) => {
+    if(!qemuReady){
+        s.emit('not-ready')
+        return
+    }
     const term = pty.spawn('ssh',['cloudshell'])
     s.on('data',(data)=>{
         term.write(data)
@@ -72,7 +77,7 @@ const waitForLogin = (() => {
 })()
 
 qemuProcess.stdout.on('data', (data) => {
-    waitForLogin(data) && console.log('qemu ready')
+    qemuReady = waitForLogin(data)
 });
 
 qemuProcess.on('close', (code) => {
