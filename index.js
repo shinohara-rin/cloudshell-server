@@ -60,12 +60,19 @@ const qemuArgs = [
 console.log('starting qemu process with command: ' + qemuCmd + ' ' + qemuArgs.join(' '));
 const qemuProcess = spawn(qemuCmd, qemuArgs);
 
-qemuProcess.stdout.on('data', (data) => {
-    // check for string "login:"
-    if (data.toString().includes('login:')) {
-        console.log('qemu process started');
+const waitForLogin = (() => {
+    let concat = ''
+    return (data) => {
+        concat += data
+        if (concat.includes('login')) {
+            return true
+        }
+        return false
     }
-    console.log(`stdout: ${data}`);
+})()
+
+qemuProcess.stdout.on('data', (data) => {
+    waitForLogin(data) && console.log('qemu ready')
 });
 
 qemuProcess.on('close', (code) => {
